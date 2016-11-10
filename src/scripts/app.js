@@ -124,21 +124,21 @@ var
                         dy /= d;
                         d = ( 2 - d ) / 2;
                         d *= d;
-                        velocities[bp] += dx * d * .01;
-                        velocities[bp+1] += dy * d * .01;
+                        velocities[bp] += dx * d * .008;
+                        velocities[bp+1] += dy * d * .008;
                     // }
                 }
             }
         }
 
-        gl.lineWidth(0.6);
+        gl.lineWidth(2.6);
         gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.DYNAMIC_DRAW);
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         gl.drawArrays( gl.LINES, 0, numLines );
 
-        // gl.flush();
+        gl.flush();
 
         requestAnimationFrame(draw);
     }
