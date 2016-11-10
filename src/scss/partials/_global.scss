@@ -1,0 +1,89 @@
+
+/* 	Global styles
+/* ======================================= */
+
+* {
+	box-sizing: border-box;
+}
+
+body, html {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	font-family: sans-serif;
+	margin: 0;
+	padding: 0;
+}
+
+.section, .inner {
+    display: block;
+    position: relative;
+    width: 100%;
+}
+
+.inner {
+    max-width: 1080px;
+}
+
+canvas {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    image-rendering: optimizeSpeed;
+    -webkit-interpolation-mode: nearest-neighbor;
+    z-index: 10;
+
+
+    &.nocursor {
+        cursor: none;
+    }
+
+    &.hidden {
+        display: none;
+    }
+}
+
+.button {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    z-index: 15;
+    width: 45px;
+    height: 45px;
+    padding: 16px 0px;
+    text-align: center;
+    font-size: 12px;
+    cursor: pointer;
+
+    &#undo {
+        background: #ffce54;
+    }
+
+    &#dots {
+        top: 65px;
+        background: #e9573f;
+    }
+
+    &#fill {
+        top: 120px;
+        background: #4FC1E9;
+    }
+
+    &#ok {
+        top: 175px;
+        background: #AC92EC;
+    }
+
+    &#stroke {
+        top: 20px;
+        background: #AC92EC;
+    }
+
+    &#layer {
+        top: 170px;
+        background: #F5F7FA;
+    }
+}
