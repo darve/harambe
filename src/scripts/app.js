@@ -35,7 +35,7 @@ var
         velocities = [],
 
         ratio = cw / ch,
-        numLines = 300000,
+        numLines = 3000,
 
         colours = [
             '#ed5565',
@@ -124,8 +124,8 @@ var
                         dy /= d;
                         d = ( 2 - d ) / 2;
                         d *= d;
-                        velocities[bp] += dx * d * .008;
-                        velocities[bp+1] += dy * d * .008;
+                        velocities[bp] += dx * d * .01;
+                        velocities[bp+1] += dy * d * .01;
                     // }
                 }
             }
@@ -136,9 +136,9 @@ var
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        gl.drawArrays( gl.LINES, 0, numLines );
+        gl.drawArrays( gl.TRIANGLE_FAN, 0, numLines );
 
-        gl.flush();
+        // gl.flush();
 
         requestAnimationFrame(draw);
     }
@@ -168,6 +168,7 @@ var
 
         gl.enable(gl.BLEND);
         gl.disable(gl.DEPTH_TEST);
+        gl.blendEquation(gl.FUNC_ADD);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 
         for ( var i = 0; i < numLines; i++ ) {
