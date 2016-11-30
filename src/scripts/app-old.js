@@ -35,7 +35,7 @@ var
         velocities = [],
 
         ratio = cw / ch,
-        numLines = 400000,
+        numLines = 3000,
 
         colours = [
             '#ed5565',
@@ -136,9 +136,9 @@ var
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        gl.drawArrays( gl.POINTS, 0, numLines );
+        gl.drawArrays( gl.TRIANGLE_FAN, 0, numLines );
 
-        gl.flush();
+        // gl.flush();
 
         requestAnimationFrame(draw);
     }
