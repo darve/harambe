@@ -123,6 +123,7 @@ gulp.task('watch', function() {
 
     gulp.watch([
         './src/scripts/**/*.js',
+        './src/scripts/shaders/*.c',
         './src/scss/**'
     ], ['build']);
 });
