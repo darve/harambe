@@ -98,6 +98,10 @@ canvas {
     cursor: none; }
   canvas.hidden {
     display: none; }
+  canvas.image-canvas {
+    pointer-events: none;
+    opacity: 0.5;
+    z-index: 20; }
 
 .button {
   position: absolute;
