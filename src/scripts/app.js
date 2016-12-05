@@ -15,8 +15,7 @@ var
 'use strict';
 
 (function(win,doc,c) {
-
-    var gl = c.getContext('webgl'),
+   var gl = c.getContext('webgl'),
 
         cw = win.innerWidth,
         ch = win.innerHeight,
@@ -56,19 +55,20 @@ var
         timers = [],
 
         col,
-        scale = 0.05,
-        smoothing = 500,
-        deltaTime = 0.0016,
+        scale = 0.04,
+        smoothing = 320,
+        deltaTime = 0.016,
 
         ratio = cw / ch,
         // numParticles = 1024 * 1024;
-        numParticles = 100000,
+        numParticles = 40000,
 
         // These are all used for the main rendering loop
         now,
         then = Date.now(),
         interval = 1000/60,
-        delta = 1;
+        delta = 1,
+        lifetime = 300;
 
     /**
      * Rendering loop
@@ -90,14 +90,38 @@ var
      */
     function get_colour (arr) {
 
+        var x = Math.floor(arr[0]);
+        var y = Math.floor(arr[1]);
+
         return [
-            pixels[arr[1]*4*cw + arr[0]*4],
-            pixels[arr[1]*4*cw + arr[0]*4+1],
-            pixels[arr[1]*4*cw + arr[0]*4+2],
-            pixels[arr[1]*4*cw + arr[0]*4+3]
+            get_channel(x,y,0),
+            get_channel(x,y,1),
+            get_channel(x,y,2),
+            get_channel(x,y,3),
         ];
 
     }
+
+    function get_channel_smooth(x,y,channel){
+
+        var x_ = Math.floor(x)
+        var y_ = Math.floor(y)
+        var lerp_x = x - x_;
+        var lerp_y = y - y_;
+
+        var a = get_channel(x,y,channel)
+        var b = get_channel(x_,y_,channel)
+        return (lerp(a,b,lerp_x) + lerp(a,b,lerp_y))/2;
+    }
+
+    function lerp(a, b, t){
+        return a*(1-t)+b*t;
+    }
+
+    function get_channel(x,y, channel){
+         return pixels[y*4*cw + x*4 + channel];
+    }
+
 
     function clipspace (x, y) {
 
@@ -111,8 +135,8 @@ var
     function screenspace (x, y) {
 
         return [
-            Math.floor((x * cw2) + cw2),
-            Math.floor((y * ch2) + ch2)
+           (((x * cw2) + cw2)),
+           (((y * ch2) + ch2))
         ];
     }
 
@@ -121,7 +145,7 @@ var
      */
     function resetVertex (i) {
 
-        timers[i] = Math.random() * 50;
+        timers[i] = Math.random() * lifetime;
         vertices[i] = (Math.random() * 2) - 1;
         vertices[i + 1] = (Math.random() * 2) - 1;
         velocities[i] = (Math.random() * 10) - 5;
@@ -136,36 +160,35 @@ var
             // Returns the RGBA values for the position vector - returns false if out of bounds.
             col = get_colour( screenspace(vertices[i], vertices[i+1]) );
 
-            if ( col !== false ) {
+            if ( col !== false && col[0] > 0 ) {
+
+                if ( timers[i] > lifetime ) {
+                    resetVertex(i);
+                }
 
                 // Assign values to our direction, velocity and position vectors
                 dir.update([col[1]-0.5, 0.5-col[0]]).normalise();
                 vel.update([velocities[i], velocities[i+1]]);
-                pos.update(screenspace(vertices[i], vertices[i+1]));
+                pos.update([vertices[i], vertices[i+1]]);
 
-                if ( vel.dot(dir) >= -0.6 ) {
-                    dir.multiplyEq(smoothing * scale * deltaTime);
-                    vel.plusEq(dir);
-                }
+                dir.multiplyEq(smoothing * scale * deltaTime);
+                vel.plusEq(dir);
 
-                if ( vel.magnitude > 1 ) {
-                    vel.normalise();
+                if ( vel.magnitude() > 6 ) {
+                    vel.normalise().multiplyEq(4);
                 }
 
                 velocities[i] = vel.x;
                 velocities[i+1] = vel.y;
 
-                pos.plusEq( vel.multiplyEq(scale * deltaTime) );
+                vel.multiplyEq(scale * deltaTime)
+                pos.plusEq(vel);
 
-                vertices[i] = clipspace(pos.x, pos.y)[0];
-                vertices[i+1] = clipspace(pos.x, pos.y)[1];
+                vertices[i] = pos.x;
+                vertices[i+1] = pos.y;
 
             } else {
                 resetVertex(i)
-            }
-
-            if ( timers[i] > 800 ) {
-                resetVertex(i);
             }
 
             timers[i]++;
@@ -265,6 +288,5 @@ var
 
         img.src = "/assets/img/hulk.png";
     });
-
 
 })(window,document,document.querySelectorAll('canvas')[0]);
