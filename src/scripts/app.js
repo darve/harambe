@@ -55,8 +55,10 @@ var
         velocities = [],
         timers = [],
 
-        scale = 0.050,
+        col,
+        scale = 0.05,
         smoothing = 500,
+        deltaTime = 0.0016,
 
         ratio = cw / ch,
         // numParticles = 1024 * 1024;
@@ -68,6 +70,9 @@ var
         interval = 1000/60,
         delta = 1;
 
+    /**
+     * Rendering loop
+     */
     function render() {
         window.requestAnimationFrame(render);
         now = Date.now();
@@ -80,42 +85,11 @@ var
     }
 
     /**
-     * THIS DOES NOT FUCKING WORK
+     * Returns the pixel data for a given position in screenspace
+     * @param  {Array} arr index 0 is x, index 1 is y
      */
     function get_colour (arr) {
 
-        if ( arr[0] < 0 || arr[1] < 0 || arr[0] > cw || arr[1] > ch ) return false;
-
-        var index = arr[0] * arr[1] * 4;
-
-        // console.log(
-        //     imageData.data[((arr[1]*(imageData.width*4)) + (arr[0]*4),
-        //     imageData.data[((arr[1]*(imageData.width*4)) + (arr[0]*4) + 1,
-        //     imageData.data[((arr[1]*(imageData.width*4)) + (arr[0]*4) + 2,
-        //     imageData.data[((arr[1]*(imageData.width*4)) + (arr[0]*4) + 3
-        // );
-
-        // console.log(arr[0] * imgData.width * 4  )
-        // console.log( arr[0], arr[1], imgData.data[index], imgData.data[index+1], imgData.data[index+2], imgData.data[index+3] );
-        // console.log(imgData.data[index])
-        // console.log( arr[0], arr[1], pixels[index], pixels[index+1], pixels[index+2], pixels[index+3] );
-
-        // console.log(pixels.length);
-        // console.log([
-        //     pixels[(arr[1]*(cw*4) + (arr[0]*4))],
-        //     pixels[(arr[1]*(cw*4) + (arr[0]*4)) + 1],
-        //     pixels[(arr[1]*(cw*4) + (arr[0]*4)) + 2],
-        //     pixels[(arr[1]*(cw*4) + (arr[0]*4)) + 3]
-        // ]);
-
-        // console.log([
-        //     pixels[arr[1]*4*imgData.width + arr[0]*4],
-        //     pixels[arr[1]*4*imgData.width + arr[0]*4+1],
-        //     pixels[arr[1]*4*imgData.width + arr[0]*4+2],
-        //     pixels[arr[1]*4*imgData.width + arr[0]*4+3]
-        // ])
-
-        // debugger;
         return [
             pixels[arr[1]*4*cw + arr[0]*4],
             pixels[arr[1]*4*cw + arr[0]*4+1],
@@ -126,11 +100,13 @@ var
     }
 
     function clipspace (x, y) {
+
         return [ (x-cw2)/(cw2), (y-ch2)/(ch2) ];
+
     }
 
     /**
-     * This works, so fuck off
+     * Convert clipspace to screenspace
      */
     function screenspace (x, y) {
 
@@ -140,60 +116,56 @@ var
         ];
     }
 
+    /**
+     * A vertex is either off screen or has run out of time, reset it.
+     */
+    function resetVertex (i) {
+
+        timers[i] = Math.random() * 50;
+        vertices[i] = (Math.random() * 2) - 1;
+        vertices[i + 1] = (Math.random() * 2) - 1;
+        velocities[i] = (Math.random() * 10) - 5;
+        velocities[i+1] = (Math.random() * 10) - 5;
+
+    }
+
     function draw() {
 
         for ( var i = 0, l = vertices.length; i < l; i += 3 ) {
 
-            var col = get_colour(
-                screenspace(vertices[i], vertices[i+1])
-            );
+            // Returns the RGBA values for the position vector - returns false if out of bounds.
+            col = get_colour( screenspace(vertices[i], vertices[i+1]) );
 
             if ( col !== false ) {
+
+                // Assign values to our direction, velocity and position vectors
                 dir.update([col[1]-0.5, 0.5-col[0]]).normalise();
                 vel.update([velocities[i], velocities[i+1]]);
                 pos.update(screenspace(vertices[i], vertices[i+1]));
 
                 if ( vel.dot(dir) >= -0.6 ) {
-
-                    dir
-                        .multiplyEq(smoothing)
-                        .multiplyEq(scale)
-                        // .multiplyEq(0.05);
+                    dir.multiplyEq(smoothing * scale * deltaTime);
+                    vel.plusEq(dir);
                 }
-
-                vel
-                    .plusEq(dir);
 
                 if ( vel.magnitude > 1 ) {
                     vel.normalise();
                 }
 
-                pos.plusEq(
-                    vel.multiplyEq(scale)
-                    // dir
-                    // vel.multiplyEq(scale).multiplyEq(0.05)
-                );
+                velocities[i] = vel.x;
+                velocities[i+1] = vel.y;
+
+                pos.plusEq( vel.multiplyEq(scale * deltaTime) );
 
                 vertices[i] = clipspace(pos.x, pos.y)[0];
                 vertices[i+1] = clipspace(pos.x, pos.y)[1];
 
-                velocities[i] = vel.x;
-                velocities[i+1] = vel.y;
-
             } else {
-                vertices[i] = (Math.random()*2) - 1;
-                vertices[i + 1] = (Math.random()*2) - 1;
-                velocities[i] = (Math.random() * 10) - 5;
-                velocities[i+1] = (Math.random() * 10) - 5;
+                resetVertex(i)
             }
 
-            if ( timers[i] > 90 ) {
-                var time = Math.random() * 50;
-                timers[i] = time;
-                vertices[i] = (Math.random()*2) - 1;
-                vertices[i + 1] = (Math.random()*2) - 1;
-                velocities[i] = (Math.random() * 10) - 5;
-                velocities[i+1] = (Math.random() * 10) - 5;
+            if ( timers[i] > 800 ) {
+                resetVertex(i);
             }
 
             timers[i]++;
@@ -208,8 +180,6 @@ var
     }
 
     function init(ev) {
-
-        // gl.viewport(0, 0, cw, ch);
 
         gl.shaderSource(vertexShader, vert_shader());
         gl.compileShader(vertexShader);
@@ -231,6 +201,9 @@ var
         gl.blendEquation(gl.FUNC_ADD);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 
+        /**
+         * Generate our initial positions and velocities for our particles
+         */
         for ( var i = 0; i < numParticles; i++ ) {
             vertices.push( (Math.random() * 2) - 1, (Math.random() * 2) - 1, 0 );
             velocities.push( (Math.random() * 10) - 5, (Math.random() * 10) - 5, 0 );
@@ -267,7 +240,6 @@ var
 
         c.width = ic.width = cw;
         c.height = ic.height = ch;
-
         gl.viewport(0, 0, cw, ch);
 
         // document.body.appendChild(ic);
