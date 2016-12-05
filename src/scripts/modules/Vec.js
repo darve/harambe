@@ -22,6 +22,12 @@ module.exports = (function() {
             return this;
         },
 
+        update: function( arr ) {
+            this.x = arr[0];
+            this.y = arr[1];
+            return this;
+        },
+
         projectNew : function( vec, distance ) {
 
             var newvec = new Vec( this.x, this.y );

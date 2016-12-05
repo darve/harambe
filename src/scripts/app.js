@@ -50,49 +50,23 @@ var
         uModelViewMatrix,
         uPerspectiveMatrix,
 
+        positions = [],
         vertices = [],
         velocities = [],
+        timers = [],
 
-        scale = 0.04,
+        scale = 0.050,
         smoothing = 500,
 
         ratio = cw / ch,
         // numParticles = 1024 * 1024;
-        numParticles = 200000,
+        numParticles = 100000,
 
         // These are all used for the main rendering loop
         now,
         then = Date.now(),
         interval = 1000/60,
         delta = 1;
-
-    /**
-     * THIS DOES NOT FUCKING WORK
-     */
-    function get_colour (arr) {
-
-        var index = arr[0] * arr[1] * 4;
-        // console.log('get color', arr[0], arr[1]s, index, [pixels[index], pixels[index+1], pixels[index+2], pixels[index+3]]);
-
-        return [
-            pixels[index],
-            pixels[index+1],
-            pixels[index+2],
-            pixels[index+3]
-        ];
-
-    }
-
-    function clipspace (x, y) {
-        return [ (x-cw2)/(cw2), (y-ch2)/(ch2) ];
-    }
-
-    /**
-     * This works, so fuck off
-     */
-    function screenspace (x, y) {
-        return [ Math.floor((x * cw2) + cw2), Math.floor((y * ch2) + ch2) ];
-    }
 
     function render() {
         window.requestAnimationFrame(render);
@@ -105,58 +79,124 @@ var
         }
     }
 
+    /**
+     * THIS DOES NOT FUCKING WORK
+     */
+    function get_colour (arr) {
+
+        if ( arr[0] < 0 || arr[1] < 0 || arr[0] > cw || arr[1] > ch ) return false;
+
+        var index = arr[0] * arr[1] * 4;
+
+        // console.log(
+        //     imageData.data[((arr[1]*(imageData.width*4)) + (arr[0]*4),
+        //     imageData.data[((arr[1]*(imageData.width*4)) + (arr[0]*4) + 1,
+        //     imageData.data[((arr[1]*(imageData.width*4)) + (arr[0]*4) + 2,
+        //     imageData.data[((arr[1]*(imageData.width*4)) + (arr[0]*4) + 3
+        // );
+
+        // console.log(arr[0] * imgData.width * 4  )
+        // console.log( arr[0], arr[1], imgData.data[index], imgData.data[index+1], imgData.data[index+2], imgData.data[index+3] );
+        // console.log(imgData.data[index])
+        // console.log( arr[0], arr[1], pixels[index], pixels[index+1], pixels[index+2], pixels[index+3] );
+
+        // console.log(pixels.length);
+        // console.log([
+        //     pixels[(arr[1]*(cw*4) + (arr[0]*4))],
+        //     pixels[(arr[1]*(cw*4) + (arr[0]*4)) + 1],
+        //     pixels[(arr[1]*(cw*4) + (arr[0]*4)) + 2],
+        //     pixels[(arr[1]*(cw*4) + (arr[0]*4)) + 3]
+        // ]);
+
+        // console.log([
+        //     pixels[arr[1]*4*imgData.width + arr[0]*4],
+        //     pixels[arr[1]*4*imgData.width + arr[0]*4+1],
+        //     pixels[arr[1]*4*imgData.width + arr[0]*4+2],
+        //     pixels[arr[1]*4*imgData.width + arr[0]*4+3]
+        // ])
+
+        // debugger;
+        return [
+            pixels[arr[1]*4*cw + arr[0]*4],
+            pixels[arr[1]*4*cw + arr[0]*4+1],
+            pixels[arr[1]*4*cw + arr[0]*4+2],
+            pixels[arr[1]*4*cw + arr[0]*4+3]
+        ];
+
+    }
+
+    function clipspace (x, y) {
+        return [ (x-cw2)/(cw2), (y-ch2)/(ch2) ];
+    }
+
+    /**
+     * This works, so fuck off
+     */
+    function screenspace (x, y) {
+
+        return [
+            Math.floor((x * cw2) + cw2),
+            Math.floor((y * ch2) + ch2)
+        ];
+    }
+
     function draw() {
 
         for ( var i = 0, l = vertices.length; i < l; i += 3 ) {
 
-            var col = get_colour(screenspace(vertices[i], vertices[i+1]));
+            var col = get_colour(
+                screenspace(vertices[i], vertices[i+1])
+            );
 
-            dir.x = col[1] - 0.5;
-            dir.y = 0.5 - col[0];
-            dir.divideEq(100);
+            if ( col !== false ) {
+                dir.update([col[1]-0.5, 0.5-col[0]]).normalise();
+                vel.update([velocities[i], velocities[i+1]]);
+                pos.update(screenspace(vertices[i], vertices[i+1]));
 
-            // console.log(dir);
-            // debugger;
+                if ( vel.dot(dir) >= -0.6 ) {
 
-            vel.x = velocities[i];
-            vel.y = velocities[i+1];
+                    dir
+                        .multiplyEq(smoothing)
+                        .multiplyEq(scale)
+                        // .multiplyEq(0.05);
+                }
 
-            // console.log(dir.dot(vel));
-            if ( dir.dot(vel) >= -0.6 ) {
-                vel.plusEq(dir)
-                // .multiplyEq(smoothing * scale);
+                vel
+                    .plusEq(dir);
+
+                if ( vel.magnitude > 1 ) {
+                    vel.normalise();
+                }
+
+                pos.plusEq(
+                    vel.multiplyEq(scale)
+                    // dir
+                    // vel.multiplyEq(scale).multiplyEq(0.05)
+                );
+
+                vertices[i] = clipspace(pos.x, pos.y)[0];
+                vertices[i+1] = clipspace(pos.x, pos.y)[1];
+
+                velocities[i] = vel.x;
+                velocities[i+1] = vel.y;
+
+            } else {
+                vertices[i] = (Math.random()*2) - 1;
+                vertices[i + 1] = (Math.random()*2) - 1;
+                velocities[i] = (Math.random() * 10) - 5;
+                velocities[i+1] = (Math.random() * 10) - 5;
             }
 
-            // if ( vel.x*vel.x+vel.y*vel.y > 1 ) {
-            //     vel.normalise();
-            // }
+            if ( timers[i] > 90 ) {
+                var time = Math.random() * 50;
+                timers[i] = time;
+                vertices[i] = (Math.random()*2) - 1;
+                vertices[i + 1] = (Math.random()*2) - 1;
+                velocities[i] = (Math.random() * 10) - 5;
+                velocities[i+1] = (Math.random() * 10) - 5;
+            }
 
-            // vel.normalise();
-
-            pos.x = vertices[i];
-            pos.y = vertices[i+1];
-
-            // console.log(pos.x, pos.y, vel.x, vel.y);
-            // debugger;
-
-            // pos.x += vel.x;
-            // pos.y += vel.y;
-
-            // dir.normalise();
-
-
-
-            // pos.plusEq(vel.normalise());
-            // pos.plusEq(vel.multiplyNew(scale*delta));
-
-            // console.log(vel);
-            // debugger;
-            pos.plusEq(vel);
-
-            vertices[i] = pos.x;
-            vertices[i+1] = pos.y;
-
-            // console.log(vertices[i], vertices[i+1]);
+            timers[i]++;
         }
 
         gl.lineWidth(2.6);
@@ -167,13 +207,10 @@ var
 
     }
 
-    window.dave = draw;
-
     function init(ev) {
 
-        gl.viewport(0, 0, cw, ch);
+        // gl.viewport(0, 0, cw, ch);
 
-        // Load the vertex shader source (vert.c)
         gl.shaderSource(vertexShader, vert_shader());
         gl.compileShader(vertexShader);
 
@@ -195,20 +232,15 @@ var
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 
         for ( var i = 0; i < numParticles; i++ ) {
-            vertices.push((Math.random()*2) - 1, (Math.random()*2) - 1, 0);
-            // vertices.push(0, 0, 0);
-            // vertices.push( (Math.random() * 2 - 1)*.05, (Math.random() * 2 - 1)*.05, 1.83 );
-            // velocities.push( (Math.random() * 2 - 1)*.05, (Math.random() * 2 - 1)*.05, .93 + Math.random()*.02 );
-            // velocities.push( 0.001, 0.001, 0);
-            velocities.push(
-                ((Math.random()*2) - 1) / 1000,
-                ((Math.random()*2) - 1) / 1000,
-                0
-            );
+            vertices.push( (Math.random() * 2) - 1, (Math.random() * 2) - 1, 0 );
+            velocities.push( (Math.random() * 10) - 5, (Math.random() * 10) - 5, 0 );
+            var time = Math.random() * 100;
+            timers.push(time, time, time);
         }
 
         vertices = new Float32Array(vertices);
         velocities = new Float32Array(velocities);
+        timers = new Float32Array(timers);
 
         vertexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
@@ -227,10 +259,16 @@ var
         requestAnimationFrame(render);
     }
 
+    /**
+     * DOM has loaded
+     * Get the hulk image and save the pixel data thereof into an array
+     */
     $(function() {
 
         c.width = ic.width = cw;
         c.height = ic.height = ch;
+
+        gl.viewport(0, 0, cw, ch);
 
         // document.body.appendChild(ic);
         // ic.className = 'image-canvas';
@@ -240,9 +278,11 @@ var
         img.onload = function() {
             iw = img.width;
             ih = img.height;
-            icx.drawImage(img, 0, 0, window.innerWidth, window.innerHeight);
-            imgData = icx.getImageData(0, 0, window.innerWidth, window.innerHeight);
-            pixels = new Float32Array(window.innerWidth * window.innerHeight * 4);
+
+            icx.drawImage(img, 0, 0, cw, ch);
+            imgData = icx.getImageData(0, 0, cw, ch);
+
+            pixels = new Float32Array(cw * ch * 4);
 
             imgData.data.forEach(function(v, i) {
                 pixels[i] = (1 / 255) * v;
@@ -254,6 +294,5 @@ var
         img.src = "/assets/img/hulk.png";
     });
 
-    // $(init);
 
 })(window,document,document.querySelectorAll('canvas')[0]);
