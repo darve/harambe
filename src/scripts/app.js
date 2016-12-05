@@ -64,7 +64,7 @@ var
 
         ratio = cw / ch,
         // numParticles = 1024 * 1024;
-        numParticles = 10000,
+        numParticles = 60000,
         scd = smoothing * scale * deltaTime,
         sd = scale * deltaTime,
 
