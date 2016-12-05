@@ -59,16 +59,21 @@ var
         smoothing = 320,
         deltaTime = 0.016,
 
+        x,
+        y,
+
         ratio = cw / ch,
         // numParticles = 1024 * 1024;
-        numParticles = 40000,
+        numParticles = 10000,
+        scd = smoothing * scale * deltaTime,
+        sd = scale * deltaTime,
 
         // These are all used for the main rendering loop
         now,
         then = Date.now(),
         interval = 1000/60,
         delta = 1,
-        lifetime = 300;
+        lifetime = 2000;
 
     /**
      * Rendering loop
@@ -90,14 +95,14 @@ var
      */
     function get_colour (arr) {
 
-        var x = Math.floor(arr[0]);
-        var y = Math.floor(arr[1]);
+        x = Math.floor(arr[0]);
+        y = Math.floor(arr[1]);
 
         return [
-            get_channel(x,y,0),
-            get_channel(x,y,1),
-            get_channel(x,y,2),
-            get_channel(x,y,3),
+            pixels[y*4*cw + x*4 + 0],
+            pixels[y*4*cw + x*4 + 1],
+            pixels[y*4*cw + x*4 + 2],
+            pixels[y*4*cw + x*4 + 3]
         ];
 
     }
@@ -168,33 +173,34 @@ var
 
                 // Assign values to our direction, velocity and position vectors
                 dir.update([col[1]-0.5, 0.5-col[0]]).normalise();
+                // .multiplyEq(1.5);
                 vel.update([velocities[i], velocities[i+1]]);
                 pos.update([vertices[i], vertices[i+1]]);
 
-                dir.multiplyEq(smoothing * scale * deltaTime);
+                dir.multiplyEq(scd);
                 vel.plusEq(dir);
 
-                if ( vel.magnitude() > 6 ) {
-                    vel.normalise().multiplyEq(4);
+                if ( vel.magnitude() > 5) {
+                    vel.normalise().multiplyEq(5);
                 }
 
                 velocities[i] = vel.x;
                 velocities[i+1] = vel.y;
 
-                vel.multiplyEq(scale * deltaTime)
+                vel.multiplyEq(sd)
                 pos.plusEq(vel);
 
                 vertices[i] = pos.x;
                 vertices[i+1] = pos.y;
 
             } else {
-                resetVertex(i)
+                resetVertex(i);
             }
 
             timers[i]++;
         }
 
-        gl.lineWidth(2.6);
+        // gl.lineWidth(2.6);
         gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.DYNAMIC_DRAW);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.drawArrays( gl.POINTS, 0, numParticles );
@@ -274,7 +280,10 @@ var
             iw = img.width;
             ih = img.height;
 
-            icx.drawImage(img, 0, 0, cw, ch);
+            icx.save();
+            icx.scale(1, -1);
+            icx.drawImage(img, 0, 0, cw, -ch);
+            icx.restore();
             imgData = icx.getImageData(0, 0, cw, ch);
 
             pixels = new Float32Array(cw * ch * 4);
@@ -282,6 +291,9 @@ var
             imgData.data.forEach(function(v, i) {
                 pixels[i] = (1 / 255) * v;
             });
+
+            icx.clearRect(0, 0, cw, ch);
+            icx.drawImage(img, 0, 0, cw, ch);
 
             init();
         };
