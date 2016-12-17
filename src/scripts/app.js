@@ -15,6 +15,9 @@ var
 'use strict';
 
 (function(win,doc,c) {
+
+    alert(window.WebGLRenderingContext);
+
    var gl = c.getContext('webgl'),
 
         cw = win.innerWidth,
@@ -271,8 +274,8 @@ var
         c.height = ic.height = ch;
         gl.viewport(0, 0, cw, ch);
 
-        // document.body.appendChild(ic);
-        // ic.className = 'image-canvas';
+        document.body.appendChild(ic);
+        ic.className = 'image-canvas';
 
         var img = new Image();
 
@@ -293,7 +296,7 @@ var
             });
 
             icx.clearRect(0, 0, cw, ch);
-            icx.drawImage(img, 0, 0, cw, ch);
+            // icx.drawImage(img, 0, 0, cw, ch);
 
             init();
         };

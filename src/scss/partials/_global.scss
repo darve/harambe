@@ -47,8 +47,9 @@ canvas {
 
     &.image-canvas {
         pointer-events: none;
-        opacity: 0.2;
+        opacity: 1;
         z-index: 20;
+        background: transparent;
         // transform: rotate(180deg);
     }
 }
